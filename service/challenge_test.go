@@ -105,7 +105,7 @@ func TestCreateChallenge(t *testing.T) {
 	assert.Equal(t, req.UserId, resp.UserId)
 }
 
-func TestGetChallenge(t *testing.T) {
+func TestGetChallengeById(t *testing.T) {
 	defer clearDatabase()
 	challengeService := NewChallengeService(testDb)
 
@@ -114,7 +114,7 @@ func TestGetChallenge(t *testing.T) {
 
 	req := &pb.GetChallengeRequest{Id: challenge.GetId(), UserId: challenge.GetUserId()}
 
-	resp, err := challengeService.GetChallenge(context.Background(), req)
+	resp, err := challengeService.GetChallengeById(context.Background(), req)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, challenge.GetId(), resp.Id)
@@ -143,6 +143,48 @@ func TestUpdateChallenge(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Equal(t, req.Title, resp.Title)
 	assert.Equal(t, req.Description, resp.Description)
+}
+
+func TestGetChallengesByUserId(t *testing.T) {
+	defer clearDatabase()
+	challengeService := NewChallengeService(testDb)
+
+	// Create two challenges for the same user
+	challenge1 := &model.Challenge{
+		Title:       "Challenge 1",
+		Description: "Description 1",
+		StartDate:   time.Now(),
+		EndDate:     time.Now().AddDate(0, 1, 0),
+		UserID:      1,
+	}
+	challenge2 := &model.Challenge{
+		Title:       "Challenge 2",
+		Description: "Description 2",
+		StartDate:   time.Now(),
+		EndDate:     time.Now().AddDate(0, 2, 0),
+		UserID:      1,
+	}
+	if err := testDb.Create(&challenge1).Error; err != nil {
+		t.Fatalf("failed to create challenge 1: %v", err)
+	}
+	if err := testDb.Create(&challenge2).Error; err != nil {
+		t.Fatalf("failed to create challenge 2: %v", err)
+	}
+
+	// Request to get challenges by user id
+	req := &pb.GetChallengesRequest{UserId: 1}
+	resp, err := challengeService.GetChallengesByUserId(context.Background(), req)
+
+	// Validate the result
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Len(t, resp.Challenges, 2)
+
+	// Validate the content of the challenges
+	assert.Equal(t, "Challenge 1", resp.Challenges[0].Title)
+	assert.Equal(t, "Challenge 2", resp.Challenges[1].Title)
+	assert.Equal(t, int64(1), resp.Challenges[0].UserId)
+	assert.Equal(t, int64(1), resp.Challenges[1].UserId)
 }
 
 func TestDeleteChallenge(t *testing.T) {

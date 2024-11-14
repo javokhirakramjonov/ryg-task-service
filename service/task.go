@@ -47,7 +47,7 @@ func (s *TaskService) CreateTask(ctx context.Context, req *pb.CreateTaskRequest)
 			ChallengeId: task.ChallengeID,
 		}
 
-		challenge, err := s.challengeSvs.GetChallenge(ctx, &pb.GetChallengeRequest{Id: task.ChallengeID, UserId: req.UserId})
+		challenge, err := s.challengeSvs.GetChallengeById(ctx, &pb.GetChallengeRequest{Id: task.ChallengeID, UserId: req.UserId})
 
 		if err != nil {
 			return err
@@ -79,7 +79,7 @@ func (s *TaskService) CreateTasks(ctx context.Context, req *pb.CreateTasksReques
 	createdTasks := make([]*pb.Task, 0)
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		for _, taskReq := range req.TaskRequest {
+		for _, taskReq := range req.TaskRequests {
 			createdTask, err := s.CreateTask(ctx, taskReq)
 
 			if err != nil {
@@ -96,7 +96,7 @@ func (s *TaskService) CreateTasks(ctx context.Context, req *pb.CreateTasksReques
 	}
 
 	resp := &pb.TaskList{
-		Task: createdTasks,
+		Tasks: createdTasks,
 	}
 
 	return resp, nil
@@ -114,11 +114,11 @@ func (s *TaskService) GetTasksByChallengeId(ctx context.Context, req *pb.GetTask
 	}
 
 	resp := &pb.TaskList{
-		Task: make([]*pb.Task, 0),
+		Tasks: make([]*pb.Task, 0),
 	}
 
 	for _, task := range tasks {
-		resp.Task = append(resp.Task, &pb.Task{
+		resp.Tasks = append(resp.Tasks, &pb.Task{
 			Id:          task.ID,
 			Title:       task.Title,
 			Description: task.Description,
@@ -166,11 +166,11 @@ func (s *TaskService) GetTasksByChallengeIdAndDate(ctx context.Context, req *pb.
 	}
 
 	resp := &pb.TaskWithStatusList{
-		TaskWithStatus: make([]*pb.TaskWithStatus, 0),
+		TaskWithStatuses: make([]*pb.TaskWithStatus, 0),
 	}
 
 	for _, taskAndStatus := range taskAndStatuses {
-		resp.TaskWithStatus = append(resp.TaskWithStatus, &pb.TaskWithStatus{
+		resp.TaskWithStatuses = append(resp.TaskWithStatuses, &pb.TaskWithStatus{
 			Task: &pb.Task{
 				Id:          taskAndStatus.Task.ID,
 				Title:       taskAndStatus.Task.Title,
@@ -231,7 +231,7 @@ func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest)
 	return &emptypb.Empty{}, nil
 }
 
-func (s *TaskService) ValidateTaskBelongsToUser(taskId, userId int32) error {
+func (s *TaskService) ValidateTaskBelongsToUser(taskId, userId int64) error {
 	var task model.Task
 	if err := s.db.First(&task, taskId).Error; err != nil {
 		return err

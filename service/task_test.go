@@ -45,7 +45,7 @@ func TestCreateTasks(t *testing.T) {
 	assert.NoError(t, err)
 
 	req := &pb.CreateTasksRequest{
-		TaskRequest: []*pb.CreateTaskRequest{
+		TaskRequests: []*pb.CreateTaskRequest{
 			{Title: "Task 1", Description: "Task 1 Description", ChallengeId: challenge.GetId(), UserId: 1},
 			{Title: "Task 2", Description: "Task 2 Description", ChallengeId: challenge.GetId(), UserId: 1},
 		},
@@ -53,12 +53,12 @@ func TestCreateTasks(t *testing.T) {
 
 	resp, err := taskService.CreateTasks(context.Background(), req)
 	assert.NoError(t, err)
-	assert.Equal(t, len(req.TaskRequest), len(resp.Task))
+	assert.Equal(t, len(req.TaskRequests), len(resp.Tasks))
 
-	for i, task := range req.TaskRequest {
-		assert.Equal(t, task.Title, resp.Task[i].Title)
-		assert.Equal(t, task.Description, resp.Task[i].Description)
-		assert.Equal(t, task.ChallengeId, resp.Task[i].ChallengeId)
+	for i, task := range req.TaskRequests {
+		assert.Equal(t, task.Title, resp.Tasks[i].Title)
+		assert.Equal(t, task.Description, resp.Tasks[i].Description)
+		assert.Equal(t, task.ChallengeId, resp.Tasks[i].ChallengeId)
 	}
 }
 
@@ -76,7 +76,7 @@ func TestGetTasksByChallengeId(t *testing.T) {
 
 	resp, err := taskService.GetTasksByChallengeId(context.Background(), req)
 	assert.NoError(t, err)
-	assert.Len(t, resp.Task, 2)
+	assert.Len(t, resp.Tasks, 2)
 }
 
 func TestGetTaskById(t *testing.T) {
@@ -139,11 +139,11 @@ func (s *TaskService) TestGetTasksByChallengeIdAndDate(ctx context.Context, req 
 	}
 
 	resp := &pb.TaskWithStatusList{
-		TaskWithStatus: make([]*pb.TaskWithStatus, 0),
+		TaskWithStatuses: make([]*pb.TaskWithStatus, 0),
 	}
 
 	for _, taskAndStatus := range taskAndStatuses {
-		resp.TaskWithStatus = append(resp.TaskWithStatus, &pb.TaskWithStatus{
+		resp.TaskWithStatuses = append(resp.TaskWithStatuses, &pb.TaskWithStatus{
 			Task: &pb.Task{
 				Id:          taskAndStatus.Task.ID,
 				Title:       taskAndStatus.Task.Title,

@@ -46,7 +46,7 @@ func (s *ChallengeService) CreateChallenge(ctx context.Context, req *pb.CreateCh
 	return resp, nil
 }
 
-func (s *ChallengeService) GetChallenge(ctx context.Context, req *pb.GetChallengeRequest) (*pb.Challenge, error) {
+func (s *ChallengeService) GetChallengeById(ctx context.Context, req *pb.GetChallengeRequest) (*pb.Challenge, error) {
 	if err := s.ValidateChallengeBelongsToUser(req.Id, req.UserId); err != nil {
 		return nil, err
 	}
@@ -68,6 +68,31 @@ func (s *ChallengeService) GetChallenge(ctx context.Context, req *pb.GetChalleng
 		StartDate:   timestamppb.New(challenge.StartDate),
 		EndDate:     timestamppb.New(challenge.EndDate),
 		UserId:      challenge.UserID,
+	}
+
+	return resp, nil
+}
+
+func (s *ChallengeService) GetChallengesByUserId(ctx context.Context, req *pb.GetChallengesRequest) (*pb.ChallengeList, error) {
+	var challenges []model.Challenge
+
+	if err := s.db.WithContext(ctx).Where("user_id = ?", req.UserId).Find(&challenges).Error; err != nil {
+		return nil, err
+	}
+
+	resp := &pb.ChallengeList{
+		Challenges: make([]*pb.Challenge, 0),
+	}
+
+	for _, challenge := range challenges {
+		resp.Challenges = append(resp.Challenges, &pb.Challenge{
+			Id:          challenge.ID,
+			Title:       challenge.Title,
+			Description: challenge.Description,
+			StartDate:   timestamppb.New(challenge.StartDate),
+			EndDate:     timestamppb.New(challenge.EndDate),
+			UserId:      challenge.UserID,
+		})
 	}
 
 	return resp, nil
@@ -131,7 +156,7 @@ func (s *ChallengeService) DeleteChallenge(ctx context.Context, req *pb.DeleteCh
 	return &emptypb.Empty{}, nil
 }
 
-func (s *ChallengeService) ValidateChallengeBelongsToUser(challengeId, userId int32) error {
+func (s *ChallengeService) ValidateChallengeBelongsToUser(challengeId, userId int64) error {
 	var challenge model.Challenge
 
 	if err := s.db.First(&challenge, challengeId).Error; err != nil {

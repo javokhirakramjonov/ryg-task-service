@@ -11,10 +11,10 @@ const (
 type TaskStatus string
 
 type Task struct {
-	ID          int32  `gorm:"primaryKey;autoIncrement" json:"id"`
+	ID          int64  `gorm:"primaryKey;autoIncrement" json:"id"`
 	Title       string `gorm:"type:varchar(255);not null" json:"title"`
 	Description string `gorm:"type:text" json:"description"`
-	ChallengeID int32  `gorm:"not null;index;constraint:OnDelete:CASCADE;" json:"challenge_id"`
+	ChallengeID int64  `gorm:"not null;index;constraint:OnDelete:CASCADE;" json:"challenge_id"`
 }
 
 func (Task) TableName() string {
@@ -22,8 +22,8 @@ func (Task) TableName() string {
 }
 
 type TaskAndStatus struct {
-	ID     int32      `gorm:"primaryKey;autoIncrement" json:"id"`
-	TaskID int32      `gorm:"not null;index;" json:"task_id"`
+	ID     int64      `gorm:"primaryKey;autoIncrement" json:"id"`
+	TaskID int64      `gorm:"not null;index;" json:"task_id"`
 	Date   time.Time  `gorm:"type:date;not null;index:idx_task_date" json:"date"`
 	Status TaskStatus `gorm:"type:varchar(20);not null;check:status IN ('NOT_STARTED', 'COMPLETED', 'NOT_COMPLETED')" json:"status"`
 

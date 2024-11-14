@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROTO_DIR="./ryg-protos/user_service"
+PROTO_DIR="./ryg-protos/task_service"
 OUT_DIR="."
 rm -rf "./gen_proto"
 mkdir -p "$OUT_DIR"

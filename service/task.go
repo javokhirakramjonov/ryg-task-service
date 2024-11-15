@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
@@ -130,7 +131,7 @@ func (s *TaskService) GetTasksByChallengeId(ctx context.Context, req *pb.GetTask
 }
 
 func (s *TaskService) GetTaskById(ctx context.Context, req *pb.GetTaskRequest) (*pb.Task, error) {
-	if err := s.ValidateTaskBelongsToUser(req.Id, req.UserId); err != nil {
+	if err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -157,8 +158,9 @@ func (s *TaskService) GetTasksByChallengeIdAndDate(ctx context.Context, req *pb.
 
 	var taskAndStatuses []model.TaskAndStatus
 
-	err := s.db.Joins("Task").
-		Where("Task.challenge_id = ? AND task_and_status.date = ?", req.ChallengeId, req.Date).
+	err := s.db.Joins("JOIN tasks ON tasks.id = task_and_status.task_id").
+		Preload("Task").
+		Where("tasks.challenge_id = ? AND task_and_status.date = ?", req.ChallengeId, req.Date.AsTime()).
 		Find(&taskAndStatuses).Error
 
 	if err != nil {
@@ -186,7 +188,7 @@ func (s *TaskService) GetTasksByChallengeIdAndDate(ctx context.Context, req *pb.
 }
 
 func (s *TaskService) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.Task, error) {
-	if err := s.ValidateTaskBelongsToUser(req.Id, req.UserId); err != nil {
+	if err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -214,7 +216,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest)
 }
 
 func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*emptypb.Empty, error) {
-	if err := s.ValidateTaskBelongsToUser(req.Id, req.UserId); err != nil {
+	if err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -231,14 +233,18 @@ func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest)
 	return &emptypb.Empty{}, nil
 }
 
-func (s *TaskService) ValidateTaskBelongsToUser(taskId, userId int64) error {
+func (s *TaskService) ValidateTaskBelongsToUser(taskId, challengeId, userId int64) error {
+	if err := s.challengeSvs.ValidateChallengeBelongsToUser(challengeId, userId); err != nil {
+		return err
+	}
+
 	var task model.Task
 	if err := s.db.First(&task, taskId).Error; err != nil {
 		return err
 	}
 
-	if err := s.challengeSvs.ValidateChallengeBelongsToUser(task.ChallengeID, userId); err != nil {
-		return err
+	if task.ChallengeID != challengeId {
+		return status.Error(404, "Task not found")
 	}
 
 	return nil

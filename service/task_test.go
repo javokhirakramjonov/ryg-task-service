@@ -89,7 +89,7 @@ func TestGetTaskById(t *testing.T) {
 	task, err := taskService.CreateTask(context.Background(), &pb.CreateTaskRequest{Title: "Test Task", Description: "Test Task Description", ChallengeId: challenge.GetId(), UserId: 1})
 	assert.NoError(t, err)
 
-	req := &pb.GetTaskRequest{Id: task.GetId(), UserId: 1}
+	req := &pb.GetTaskRequest{Id: task.GetId(), UserId: 1, ChallengeId: challenge.Id}
 
 	resp, err := taskService.GetTaskById(context.Background(), req)
 	assert.NoError(t, err)
@@ -114,6 +114,7 @@ func TestUpdateTask(t *testing.T) {
 		Title:       "Updated Task",
 		Description: "Updated Description",
 		UserId:      1,
+		ChallengeId: challenge.Id,
 	}
 
 	resp, err := taskService.UpdateTask(context.Background(), req)
@@ -168,7 +169,7 @@ func TestDeleteTask(t *testing.T) {
 	task, err := taskService.CreateTask(context.Background(), &pb.CreateTaskRequest{Title: "Task to Delete", Description: "Task Description", ChallengeId: challenge.GetId(), UserId: 1})
 	assert.NoError(t, err)
 
-	req := &pb.DeleteTaskRequest{Id: task.GetId(), UserId: 1}
+	req := &pb.DeleteTaskRequest{Id: task.GetId(), UserId: 1, ChallengeId: challenge.Id}
 
 	resp, err := taskService.DeleteTask(context.Background(), req)
 	assert.NoError(t, err)

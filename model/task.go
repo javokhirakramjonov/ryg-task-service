@@ -1,11 +1,11 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 const (
-	TaskStatusNotStarted   TaskStatus = "NOT_STARTED"
-	TaskStatusCompleted    TaskStatus = "COMPLETED"
-	TaskStatusNotCompleted TaskStatus = "NOT_COMPLETED"
+	TaskStatusNotStarted TaskStatus = "NOT_STARTED"
 )
 
 type TaskStatus string
@@ -22,9 +22,8 @@ func (Task) TableName() string {
 }
 
 type TaskAndStatus struct {
-	ID     int64      `gorm:"primaryKey;autoIncrement" json:"id"`
-	TaskID int64      `gorm:"not null;index;" json:"task_id"`
-	Date   time.Time  `gorm:"type:date;not null;index:idx_task_date" json:"date"`
+	TaskID int64      `gorm:"primaryKey;not null" json:"task_id"`
+	Date   time.Time  `gorm:"primaryKey;type:date;not null" json:"date"`
 	Status TaskStatus `gorm:"type:varchar(20);not null;check:status IN ('NOT_STARTED', 'COMPLETED', 'NOT_COMPLETED')" json:"status"`
 
 	Task Task `gorm:"foreignKey:TaskID;constraint:OnDelete:CASCADE;" json:"task"`

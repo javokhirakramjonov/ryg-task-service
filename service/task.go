@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 	pb "ryg-task-service/gen_proto/task_service"
 	"ryg-task-service/model"
+	"time"
 )
 
 type TaskService struct {
@@ -24,56 +25,65 @@ func NewTaskService(db *gorm.DB) *TaskService {
 }
 
 func (s *TaskService) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb.Task, error) {
-	if err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
+	if _, err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
-	var resp *pb.Task
+	if err := validateCreateTaskRequest(req); err != nil {
+		return nil, err
+	}
 
-	err := s.db.Transaction(func(tx *gorm.DB) error {
-		task := &model.Task{
-			Title:       req.Title,
-			Description: req.Description,
-			ChallengeID: req.ChallengeId,
-		}
+	task := &model.Task{
+		Title:       req.Title,
+		Description: req.Description,
+		ChallengeID: req.ChallengeId,
+	}
 
-		if err := s.db.WithContext(context.Background()).Create(&task).Error; err != nil {
-			return err
-		}
+	if err := s.db.WithContext(context.Background()).Create(&task).Error; err != nil {
+		return nil, err
+	}
 
-		resp = &pb.Task{
-			Id:          task.ID,
-			Title:       task.Title,
-			Description: task.Description,
-			ChallengeId: task.ChallengeID,
-		}
+	return &pb.Task{
+		Id:          task.ID,
+		Title:       task.Title,
+		Description: task.Description,
+		ChallengeId: task.ChallengeID,
+	}, nil
+}
 
-		challenge, err := s.challengeSvs.GetChallengeById(ctx, &pb.GetChallengeRequest{Id: task.ChallengeID, UserId: req.UserId})
+func validateCreateTaskRequest(req *pb.CreateTaskRequest) error {
+	if req.Title == "" {
+		return status.Error(400, "Title is required")
+	}
 
-		if err != nil {
-			return err
-		}
+	return nil
+}
 
-		for date := challenge.StartDate.AsTime(); !date.After(challenge.EndDate.AsTime()); date = date.AddDate(0, 0, 1) {
+func (s *TaskService) createTaskAndStatusesForChallenge(tx *gorm.DB, challenge *model.Challenge) error {
+	tasks, err := s.GetTasksByChallengeId(context.Background(), &pb.GetTasksByChallengeIdRequest{
+		ChallengeId: challenge.ID,
+		UserId:      challenge.UserID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for _, task := range tasks.Tasks {
+		for date := challenge.StartDate; date.Before(challenge.EndDate); date = date.AddDate(0, 0, 1) {
 			taskAndStatus := &model.TaskAndStatus{
-				TaskID: task.ID,
+				TaskID: task.Id,
 				Date:   date,
 				Status: model.TaskStatusNotStarted,
 			}
 
-			if err := s.db.WithContext(context.Background()).Create(&taskAndStatus).Error; err != nil {
+			if err := tx.WithContext(context.Background()).Create(&taskAndStatus).Error; err != nil {
 				return err
 			}
 		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
 	}
 
-	return resp, nil
+	return nil
 }
 
 func (s *TaskService) CreateTasks(ctx context.Context, req *pb.CreateTasksRequest) (*pb.TaskList, error) {
@@ -81,6 +91,10 @@ func (s *TaskService) CreateTasks(ctx context.Context, req *pb.CreateTasksReques
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		for _, taskReq := range req.TaskRequests {
+			if err := validateCreateTaskRequest(taskReq); err != nil {
+				return err
+			}
+
 			createdTask, err := s.CreateTask(ctx, taskReq)
 
 			if err != nil {
@@ -104,7 +118,7 @@ func (s *TaskService) CreateTasks(ctx context.Context, req *pb.CreateTasksReques
 }
 
 func (s *TaskService) GetTasksByChallengeId(ctx context.Context, req *pb.GetTasksByChallengeIdRequest) (*pb.TaskList, error) {
-	if err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
+	if _, err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -131,13 +145,9 @@ func (s *TaskService) GetTasksByChallengeId(ctx context.Context, req *pb.GetTask
 }
 
 func (s *TaskService) GetTaskById(ctx context.Context, req *pb.GetTaskRequest) (*pb.Task, error) {
-	if err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId); err != nil {
-		return nil, err
-	}
+	task, err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId)
 
-	var task model.Task
-
-	if err := s.db.WithContext(context.Background()).First(&task, req.Id).Error; err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -152,7 +162,7 @@ func (s *TaskService) GetTaskById(ctx context.Context, req *pb.GetTaskRequest) (
 }
 
 func (s *TaskService) GetTasksByChallengeIdAndDate(ctx context.Context, req *pb.GetTaskByChallengeIdAndDateRequest) (*pb.TaskWithStatusList, error) {
-	if err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
+	if _, err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -188,13 +198,12 @@ func (s *TaskService) GetTasksByChallengeIdAndDate(ctx context.Context, req *pb.
 }
 
 func (s *TaskService) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.Task, error) {
-	if err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId); err != nil {
+	task, err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId)
+	if err != nil {
 		return nil, err
 	}
 
-	var task model.Task
-
-	if err := s.db.WithContext(context.Background()).First(&task, req.Id).Error; err != nil {
+	if err := validateUpdateTaskRequest(req); err != nil {
 		return nil, err
 	}
 
@@ -215,14 +224,18 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest)
 	return resp, nil
 }
 
-func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*emptypb.Empty, error) {
-	if err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId); err != nil {
-		return nil, err
+func validateUpdateTaskRequest(req *pb.UpdateTaskRequest) error {
+	if req.Title == "" {
+		return status.Error(400, "Title is required")
 	}
 
-	var task model.Task
+	return nil
+}
 
-	if err := s.db.WithContext(context.Background()).First(&task, req.Id).Error; err != nil {
+func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*emptypb.Empty, error) {
+	task, err := s.ValidateTaskBelongsToUser(req.Id, req.ChallengeId, req.UserId)
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -233,18 +246,76 @@ func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest)
 	return &emptypb.Empty{}, nil
 }
 
-func (s *TaskService) ValidateTaskBelongsToUser(taskId, challengeId, userId int64) error {
-	if err := s.challengeSvs.ValidateChallengeBelongsToUser(challengeId, userId); err != nil {
-		return err
+func (s *TaskService) ValidateTaskBelongsToUser(taskId, challengeId, userId int64) (*model.Task, error) {
+	if _, err := s.challengeSvs.ValidateChallengeBelongsToUser(challengeId, userId); err != nil {
+		return nil, err
 	}
 
 	var task model.Task
 	if err := s.db.First(&task, taskId).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	if task.ChallengeID != challengeId {
-		return status.Error(404, "Task not found")
+		return nil, status.Error(404, "Task not found")
+	}
+
+	return &task, nil
+}
+
+func (s *TaskService) UpdateTaskStatus(ctx context.Context, req *pb.UpdateTaskStatusRequest) (*pb.TaskWithStatus, error) {
+	if _, err := s.ValidateTaskBelongsToUser(req.TaskId, req.ChallengeId, req.UserId); err != nil {
+		return nil, err
+	}
+
+	if err := s.validateUpdateTaskStatusRequest(req); err != nil {
+		return nil, err
+	}
+
+	var taskAndStatus model.TaskAndStatus
+
+	if err := s.db.First(&taskAndStatus, "task_id = ? AND date = ?", req.TaskId, req.Date.AsTime()).Error; err != nil {
+		return nil, err
+	}
+
+	taskAndStatus.Status = model.TaskStatus(req.Status)
+
+	if err := s.db.WithContext(context.Background()).Save(&taskAndStatus).Error; err != nil {
+		return nil, err
+	}
+
+	return &pb.TaskWithStatus{
+		Task: &pb.Task{
+			Id:          taskAndStatus.TaskID,
+			Title:       taskAndStatus.Task.Title,
+			Description: taskAndStatus.Task.Description,
+			ChallengeId: taskAndStatus.Task.ChallengeID,
+		},
+		Date:   timestamppb.New(taskAndStatus.Date),
+		Status: string(taskAndStatus.Status),
+	}, nil
+}
+
+func (s *TaskService) validateUpdateTaskStatusRequest(req *pb.UpdateTaskStatusRequest) error {
+	if req.Status == "" {
+		return status.Error(400, "Status is required")
+	}
+
+	today := time.Now().Truncate(24 * time.Hour)
+	requestDate := req.Date.AsTime().Truncate(24 * time.Hour)
+
+	if requestDate != today {
+		return status.Error(400, "Date should be today")
+	}
+
+	challenge, err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId)
+
+	if err != nil {
+		return err
+	}
+
+	if challenge.Status != model.ChallengeStatusStarted {
+		return status.Error(400, "Cannot update task status for not started or finished challenge")
 	}
 
 	return nil

@@ -17,7 +17,7 @@ func main() {
 	db.ConnectDB(cnf.DB)
 	defer db.CloseDB()
 
-	lis, err := net.Listen("tcp", cnf.GRPCUrl)
+	lis, err := net.Listen("tcp", cnf.RYGTaskServiceUrl)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
@@ -30,7 +30,7 @@ func main() {
 	challengeService := service.NewChallengeService(db.DB)
 	pb.RegisterChallengeServiceServer(grpcServer, challengeService)
 
-	fmt.Printf("User Microservice is running on port %v...", cnf.GRPCUrl)
+	fmt.Printf("User Microservice is running on port %v...", cnf.RYGTaskServiceUrl)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

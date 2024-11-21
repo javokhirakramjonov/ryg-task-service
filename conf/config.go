@@ -15,21 +15,21 @@ type DBConfig struct {
 }
 
 type Config struct {
-	DB      DBConfig
-	GRPCUrl string
+	DB                DBConfig
+	RYGTaskServiceUrl string
 }
 
 func LoadConfig() *Config {
 	return &Config{
 		DB: DBConfig{
-			DBHost:     os.Getenv("DB_HOST"),
-			DBPort:     os.Getenv("DB_PORT"),
-			DBUser:     os.Getenv("DB_USER"),
-			DBPassword: os.Getenv("DB_PASSWORD"),
-			DBName:     os.Getenv("DB_NAME"),
-			SSLMode:    os.Getenv("DB_SSL_MODE"),
-			TimeZone:   os.Getenv("DB_TIMEZONE"),
+			DBHost:     os.Getenv("POSTGRES_DB_HOST"),
+			DBPort:     os.Getenv("POSTGRES_DB_PORT"),
+			DBUser:     os.Getenv("POSTGRES_DB_USER"),
+			DBPassword: os.Getenv("POSTGRES_DB_PASSWORD"),
+			DBName:     os.Getenv("POSTGRES_DB_NAME"),
+			SSLMode:    os.Getenv("POSTGRES_DB_SSL_MODE"),
+			TimeZone:   os.Getenv("POSTGRES_DB_TIMEZONE"),
 		},
-		GRPCUrl: os.Getenv("GRPC_URL"),
+		RYGTaskServiceUrl: os.Getenv("RYG_TASK_SERVICE_URL"),
 	}
 }

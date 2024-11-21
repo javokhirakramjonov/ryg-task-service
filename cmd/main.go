@@ -25,9 +25,11 @@ func main() {
 	grpcServer := grpc.NewServer()
 
 	taskService := service.NewTaskService(db.DB)
-	pb.RegisterTaskServiceServer(grpcServer, taskService)
-
 	challengeService := service.NewChallengeService(db.DB)
+	taskService.ChallengeSvs = challengeService
+	challengeService.TaskSvs = taskService
+
+	pb.RegisterTaskServiceServer(grpcServer, taskService)
 	pb.RegisterChallengeServiceServer(grpcServer, challengeService)
 
 	fmt.Printf("User Microservice is running on port %v...", cnf.RYGTaskServiceUrl)

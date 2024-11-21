@@ -13,19 +13,18 @@ import (
 
 type TaskService struct {
 	db           *gorm.DB
-	challengeSvs ChallengeService
+	ChallengeSvs *ChallengeService
 	pb.UnimplementedTaskServiceServer
 }
 
 func NewTaskService(db *gorm.DB) *TaskService {
 	return &TaskService{
-		db:           db,
-		challengeSvs: *NewChallengeService(db),
+		db: db,
 	}
 }
 
 func (s *TaskService) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb.Task, error) {
-	if _, err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
+	if _, err := s.ChallengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +117,7 @@ func (s *TaskService) CreateTasks(ctx context.Context, req *pb.CreateTasksReques
 }
 
 func (s *TaskService) GetTasksByChallengeId(ctx context.Context, req *pb.GetTasksByChallengeIdRequest) (*pb.TaskList, error) {
-	if _, err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
+	if _, err := s.ChallengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -162,7 +161,7 @@ func (s *TaskService) GetTaskById(ctx context.Context, req *pb.GetTaskRequest) (
 }
 
 func (s *TaskService) GetTasksByChallengeIdAndDate(ctx context.Context, req *pb.GetTaskByChallengeIdAndDateRequest) (*pb.TaskWithStatusList, error) {
-	if _, err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
+	if _, err := s.ChallengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -247,7 +246,7 @@ func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest)
 }
 
 func (s *TaskService) ValidateTaskBelongsToUser(taskId, challengeId, userId int64) (*model.Task, error) {
-	if _, err := s.challengeSvs.ValidateChallengeBelongsToUser(challengeId, userId); err != nil {
+	if _, err := s.ChallengeSvs.ValidateChallengeBelongsToUser(challengeId, userId); err != nil {
 		return nil, err
 	}
 
@@ -308,7 +307,7 @@ func (s *TaskService) validateUpdateTaskStatusRequest(req *pb.UpdateTaskStatusRe
 		return status.Error(400, "Date should be today")
 	}
 
-	challenge, err := s.challengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId)
+	challenge, err := s.ChallengeSvs.ValidateChallengeBelongsToUser(req.ChallengeId, req.UserId)
 
 	if err != nil {
 		return err

@@ -14,14 +14,13 @@ import (
 
 type ChallengeService struct {
 	db      *gorm.DB
-	taskSvs *TaskService
+	TaskSvs *TaskService
 	pb.UnimplementedChallengeServiceServer
 }
 
 func NewChallengeService(db *gorm.DB) *ChallengeService {
 	return &ChallengeService{
-		db:      db,
-		taskSvs: NewTaskService(db),
+		db: db,
 	}
 }
 
@@ -216,7 +215,7 @@ func (s *ChallengeService) StartChallenge(ctx context.Context, req *pb.StartChal
 			return err
 		}
 
-		if err := s.taskSvs.createTaskAndStatusesForChallenge(tx, challenge); err != nil {
+		if err := s.TaskSvs.createTaskAndStatusesForChallenge(tx, challenge); err != nil {
 			return err
 		}
 

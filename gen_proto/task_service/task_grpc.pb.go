@@ -20,13 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ChallengeService_GetChallengeById_FullMethodName      = "/task_microservice.ChallengeService/GetChallengeById"
-	ChallengeService_GetChallengesByUserId_FullMethodName = "/task_microservice.ChallengeService/GetChallengesByUserId"
-	ChallengeService_CreateChallenge_FullMethodName       = "/task_microservice.ChallengeService/CreateChallenge"
-	ChallengeService_UpdateChallenge_FullMethodName       = "/task_microservice.ChallengeService/UpdateChallenge"
-	ChallengeService_DeleteChallenge_FullMethodName       = "/task_microservice.ChallengeService/DeleteChallenge"
-	ChallengeService_StartChallenge_FullMethodName        = "/task_microservice.ChallengeService/StartChallenge"
-	ChallengeService_FinishChallenge_FullMethodName       = "/task_microservice.ChallengeService/FinishChallenge"
+	ChallengeService_GetChallengeById_FullMethodName         = "/task_microservice.ChallengeService/GetChallengeById"
+	ChallengeService_GetChallengesByUserId_FullMethodName    = "/task_microservice.ChallengeService/GetChallengesByUserId"
+	ChallengeService_CreateChallenge_FullMethodName          = "/task_microservice.ChallengeService/CreateChallenge"
+	ChallengeService_UpdateChallenge_FullMethodName          = "/task_microservice.ChallengeService/UpdateChallenge"
+	ChallengeService_DeleteChallenge_FullMethodName          = "/task_microservice.ChallengeService/DeleteChallenge"
+	ChallengeService_StartChallenge_FullMethodName           = "/task_microservice.ChallengeService/StartChallenge"
+	ChallengeService_FinishChallenge_FullMethodName          = "/task_microservice.ChallengeService/FinishChallenge"
+	ChallengeService_AddUserToChallenge_FullMethodName       = "/task_microservice.ChallengeService/AddUserToChallenge"
+	ChallengeService_SubscribeToChallenge_FullMethodName     = "/task_microservice.ChallengeService/SubscribeToChallenge"
+	ChallengeService_UnsubscribeFromChallenge_FullMethodName = "/task_microservice.ChallengeService/UnsubscribeFromChallenge"
 )
 
 // ChallengeServiceClient is the client API for ChallengeService service.
@@ -40,6 +43,9 @@ type ChallengeServiceClient interface {
 	DeleteChallenge(ctx context.Context, in *DeleteChallengeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	StartChallenge(ctx context.Context, in *StartChallengeRequest, opts ...grpc.CallOption) (*Challenge, error)
 	FinishChallenge(ctx context.Context, in *FinishChallengeRequest, opts ...grpc.CallOption) (*Challenge, error)
+	AddUserToChallenge(ctx context.Context, in *AddUserToChallengeRequest, opts ...grpc.CallOption) (*AddUserToChallengeResponse, error)
+	SubscribeToChallenge(ctx context.Context, in *SubscribeToChallengeRequest, opts ...grpc.CallOption) (*Challenge, error)
+	UnsubscribeFromChallenge(ctx context.Context, in *UnsubscribeFromChallengeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type challengeServiceClient struct {
@@ -120,6 +126,36 @@ func (c *challengeServiceClient) FinishChallenge(ctx context.Context, in *Finish
 	return out, nil
 }
 
+func (c *challengeServiceClient) AddUserToChallenge(ctx context.Context, in *AddUserToChallengeRequest, opts ...grpc.CallOption) (*AddUserToChallengeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddUserToChallengeResponse)
+	err := c.cc.Invoke(ctx, ChallengeService_AddUserToChallenge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *challengeServiceClient) SubscribeToChallenge(ctx context.Context, in *SubscribeToChallengeRequest, opts ...grpc.CallOption) (*Challenge, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Challenge)
+	err := c.cc.Invoke(ctx, ChallengeService_SubscribeToChallenge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *challengeServiceClient) UnsubscribeFromChallenge(ctx context.Context, in *UnsubscribeFromChallengeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ChallengeService_UnsubscribeFromChallenge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChallengeServiceServer is the server API for ChallengeService service.
 // All implementations must embed UnimplementedChallengeServiceServer
 // for forward compatibility.
@@ -131,6 +167,9 @@ type ChallengeServiceServer interface {
 	DeleteChallenge(context.Context, *DeleteChallengeRequest) (*emptypb.Empty, error)
 	StartChallenge(context.Context, *StartChallengeRequest) (*Challenge, error)
 	FinishChallenge(context.Context, *FinishChallengeRequest) (*Challenge, error)
+	AddUserToChallenge(context.Context, *AddUserToChallengeRequest) (*AddUserToChallengeResponse, error)
+	SubscribeToChallenge(context.Context, *SubscribeToChallengeRequest) (*Challenge, error)
+	UnsubscribeFromChallenge(context.Context, *UnsubscribeFromChallengeRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedChallengeServiceServer()
 }
 
@@ -161,6 +200,15 @@ func (UnimplementedChallengeServiceServer) StartChallenge(context.Context, *Star
 }
 func (UnimplementedChallengeServiceServer) FinishChallenge(context.Context, *FinishChallengeRequest) (*Challenge, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FinishChallenge not implemented")
+}
+func (UnimplementedChallengeServiceServer) AddUserToChallenge(context.Context, *AddUserToChallengeRequest) (*AddUserToChallengeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddUserToChallenge not implemented")
+}
+func (UnimplementedChallengeServiceServer) SubscribeToChallenge(context.Context, *SubscribeToChallengeRequest) (*Challenge, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubscribeToChallenge not implemented")
+}
+func (UnimplementedChallengeServiceServer) UnsubscribeFromChallenge(context.Context, *UnsubscribeFromChallengeRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnsubscribeFromChallenge not implemented")
 }
 func (UnimplementedChallengeServiceServer) mustEmbedUnimplementedChallengeServiceServer() {}
 func (UnimplementedChallengeServiceServer) testEmbeddedByValue()                          {}
@@ -309,6 +357,60 @@ func _ChallengeService_FinishChallenge_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChallengeService_AddUserToChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddUserToChallengeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChallengeServiceServer).AddUserToChallenge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChallengeService_AddUserToChallenge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChallengeServiceServer).AddUserToChallenge(ctx, req.(*AddUserToChallengeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChallengeService_SubscribeToChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubscribeToChallengeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChallengeServiceServer).SubscribeToChallenge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChallengeService_SubscribeToChallenge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChallengeServiceServer).SubscribeToChallenge(ctx, req.(*SubscribeToChallengeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChallengeService_UnsubscribeFromChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnsubscribeFromChallengeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChallengeServiceServer).UnsubscribeFromChallenge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChallengeService_UnsubscribeFromChallenge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChallengeServiceServer).UnsubscribeFromChallenge(ctx, req.(*UnsubscribeFromChallengeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ChallengeService_ServiceDesc is the grpc.ServiceDesc for ChallengeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -343,6 +445,18 @@ var ChallengeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FinishChallenge",
 			Handler:    _ChallengeService_FinishChallenge_Handler,
+		},
+		{
+			MethodName: "AddUserToChallenge",
+			Handler:    _ChallengeService_AddUserToChallenge_Handler,
+		},
+		{
+			MethodName: "SubscribeToChallenge",
+			Handler:    _ChallengeService_SubscribeToChallenge_Handler,
+		},
+		{
+			MethodName: "UnsubscribeFromChallenge",
+			Handler:    _ChallengeService_UnsubscribeFromChallenge_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

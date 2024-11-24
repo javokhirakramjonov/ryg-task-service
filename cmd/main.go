@@ -8,6 +8,7 @@ import (
 	"ryg-task-service/conf"
 	"ryg-task-service/db"
 	pb "ryg-task-service/gen_proto/task_service"
+	"ryg-task-service/rabbit_mq"
 	"ryg-task-service/service"
 )
 
@@ -22,10 +23,12 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
+	publisherManager := rabbit_mq.NewPublisherManager(cnf.RabbitMQConfig)
+
 	grpcServer := grpc.NewServer()
 
 	taskService := service.NewTaskService(db.DB)
-	challengeService := service.NewChallengeService(db.DB)
+	challengeService := service.NewChallengeService(db.DB, publisherManager.GenericEmailQueuePublisher)
 	taskService.ChallengeSvs = challengeService
 	challengeService.TaskSvs = taskService
 

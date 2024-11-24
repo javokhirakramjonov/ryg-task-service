@@ -22,6 +22,7 @@ func (Task) TableName() string {
 }
 
 type TaskAndStatus struct {
+	UserID int64      `gorm:"primaryKey" json:"user_id"`
 	TaskID int64      `gorm:"primaryKey;not null" json:"task_id"`
 	Date   time.Time  `gorm:"primaryKey;type:date;not null" json:"date"`
 	Status TaskStatus `gorm:"type:varchar(20);not null;check:status IN ('NOT_STARTED', 'COMPLETED', 'NOT_COMPLETED')" json:"status"`

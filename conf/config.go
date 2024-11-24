@@ -14,8 +14,16 @@ type DBConfig struct {
 	TimeZone   string
 }
 
+type RabbitMQConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+}
+
 type Config struct {
 	DB                DBConfig
+	RabbitMQConfig    RabbitMQConfig
 	RYGTaskServiceUrl string
 }
 
@@ -29,6 +37,12 @@ func LoadConfig() *Config {
 			DBName:     os.Getenv("POSTGRES_DB_NAME"),
 			SSLMode:    os.Getenv("POSTGRES_DB_SSL_MODE"),
 			TimeZone:   os.Getenv("POSTGRES_DB_TIMEZONE"),
+		},
+		RabbitMQConfig: RabbitMQConfig{
+			Host:     os.Getenv("RABBITMQ_HOST"),
+			Port:     os.Getenv("RABBITMQ_PORT"),
+			User:     os.Getenv("RABBITMQ_USER"),
+			Password: os.Getenv("RABBITMQ_PASSWORD"),
 		},
 		RYGTaskServiceUrl: os.Getenv("RYG_TASK_SERVICE_URL"),
 	}

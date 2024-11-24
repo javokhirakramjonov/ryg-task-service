@@ -34,10 +34,20 @@ func ConnectDB(cnf conf.DBConfig) {
 	DB = db
 	fmt.Println("Connected to the database")
 
-	if err := DB.AutoMigrate(&model.Challenge{}, &model.Task{}, &model.TaskAndStatus{}); err != nil {
+	if err := DB.AutoMigrate(allTables()...); err != nil {
 		log.Fatalf("Error migrating database: %v", err)
 	}
 	fmt.Println("Database migrated")
+}
+
+func allTables() []interface{} {
+	return []interface{}{
+		&model.Challenge{},
+		&model.Task{},
+		&model.TaskAndStatus{},
+		&model.ChallengeAndUser{},
+		&model.ChallengeInvitation{},
+	}
 }
 
 func CloseDB() {

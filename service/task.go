@@ -321,7 +321,7 @@ func (s *TaskService) validateUpdateTaskStatusRequest(req *pb.UpdateTaskStatusRe
 	today := time.Now().Truncate(24 * time.Hour)
 	requestDate := req.Date.AsTime().Truncate(24 * time.Hour)
 
-	if requestDate.Equal(today) {
+	if !requestDate.Equal(today) {
 		return status.Error(400, "Date should be today")
 	}
 

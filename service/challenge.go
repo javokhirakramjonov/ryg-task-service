@@ -331,7 +331,7 @@ func (s *ChallengeService) AddUserToChallenge(ctx context.Context, req *pb.AddUs
 			return err
 		}
 
-		if err := s.sendInvitationEmail(req.ChallengeId, req.UserId, req.Email); err != nil {
+		if err := s.sendInvitationEmail(req.ChallengeId, req.UserToAddId, req.Email); err != nil {
 			return err
 		}
 

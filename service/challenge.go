@@ -224,8 +224,8 @@ func (s *ChallengeService) ValidateChallengeOwnedByUser(challengeId, userId int6
 func validateChallengeBelongsToUser(challengeId, userId int64, db *gorm.DB) (*model.ChallengeAndUser, error) {
 	var challengeAndUser model.ChallengeAndUser
 
-	if err := db.Preload("Challenge").First(&challengeAndUser, "challenge_id = ? AND user_id = ?", challengeId, userId); err != nil {
-		return nil, status.Error(404, "Challenge not found")
+	if err := db.Preload("Challenge").First(&challengeAndUser, "challenge_id = ? AND user_id = ?", challengeId, userId); err.Error != nil {
+		return nil, err.Error
 	}
 
 	return &challengeAndUser, nil

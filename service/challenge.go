@@ -391,7 +391,7 @@ func (s *ChallengeService) validateUserSubscribedToChallenge(challengeID, userID
 	var challengeAndUser *model.ChallengeAndUser
 
 	if err := s.db.First(&challengeAndUser, "challenge_id = ? AND user_id = ?", challengeID, userID).Error; err != nil {
-		return challengeAndUser, status.Error(404, "User not added to challenge")
+		return nil, err
 	}
 
 	return challengeAndUser, nil

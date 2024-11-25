@@ -378,7 +378,7 @@ func (s *ChallengeService) validateAddUserToChallengeRequest(req *pb.AddUserToCh
 		return status.Error(400, "Cannot add user after one day from the start date")
 	}
 
-	if _, err := s.validateUserSubscribedToChallenge(req.ChallengeId, req.UserId); err == nil {
+	if _, err := s.validateUserSubscribedToChallenge(req.ChallengeId, req.UserToAddId); err == nil {
 		return status.Error(400, "User already added to challenge")
 	}
 

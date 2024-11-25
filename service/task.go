@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
+	"log"
 	pb "ryg-task-service/gen_proto/task_service"
 	"ryg-task-service/model"
 	"time"
@@ -322,6 +323,7 @@ func (s *TaskService) validateUpdateTaskStatusRequest(req *pb.UpdateTaskStatusRe
 	requestDate := req.Date.AsTime().Truncate(24 * time.Hour)
 
 	if requestDate != today {
+		log.Printf("today: %v, requestDate: %v", today, requestDate)
 		return status.Error(400, "Date should be today")
 	}
 

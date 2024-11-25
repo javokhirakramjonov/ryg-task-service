@@ -374,9 +374,7 @@ func (s *ChallengeService) validateAddUserToChallengeRequest(req *pb.AddUserToCh
 		return status.Error(400, "Cannot add user to finished challenge")
 	}
 
-	today := time.Now().Truncate(24 * time.Hour)
-
-	if today.After(challenge.StartDate) {
+	if today := time.Now().Truncate(24 * time.Hour); challenge.Status == model.ChallengeStatusStarted && today.After(challenge.StartDate) {
 		return status.Error(400, "Cannot add user after one day from the start date")
 	}
 

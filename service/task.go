@@ -162,15 +162,22 @@ func (s *TaskService) GetTaskById(ctx context.Context, req *pb.GetTaskRequest) (
 }
 
 func (s *TaskService) GetTasksByChallengeIdAndDate(ctx context.Context, req *pb.GetTaskByChallengeIdAndDateRequest) (*pb.TaskWithStatusList, error) {
-	if _, err := s.ChallengeSvs.ValidateUserCanReadChallenge(req.ChallengeId, req.UserId); err != nil {
+	challenge, err := s.ChallengeSvs.ValidateUserCanReadChallenge(req.ChallengeId, req.UserId)
+
+	if err != nil {
 		return nil, err
+	}
+
+	if challenge.Status == model.ChallengeStatusDraft {
+		return nil, status.Error(400, "Cannot get tasks for draft challenge")
 	}
 
 	var taskAndStatuses []model.TaskAndStatus
 
-	err := s.db.Joins("JOIN tasks ON tasks.id = task_and_status.task_id").
+	err = s.db.
 		Preload("Task").
-		Where("tasks.challenge_id = ? AND task_and_status.date = ?", req.ChallengeId, req.Date.AsTime()).
+		Joins("JOIN tasks ON tasks.id = task_and_status.task_id").
+		Where("tasks.challenge_id = ? AND task_and_status.date = ? AND task_and_status.user_id = ?", req.ChallengeId, req.Date.AsTime(), req.UserId).
 		Find(&taskAndStatuses).Error
 
 	if err != nil {

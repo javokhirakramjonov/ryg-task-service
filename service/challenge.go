@@ -109,9 +109,9 @@ func (s *ChallengeService) GetChallengeById(ctx context.Context, req *pb.GetChal
 }
 
 func (s *ChallengeService) GetChallengesByUserId(ctx context.Context, req *pb.GetChallengesRequest) (*pb.ChallengeList, error) {
-	var challenges []model.Challenge
+	var challengeAndUsers []model.ChallengeAndUser
 
-	if err := s.db.WithContext(ctx).Where("user_id = ?", req.UserId).Find(&challenges).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Challenge").Where("user_id = ?", req.UserId).Find(&challengeAndUsers).Error; err != nil {
 		return nil, err
 	}
 
@@ -119,7 +119,8 @@ func (s *ChallengeService) GetChallengesByUserId(ctx context.Context, req *pb.Ge
 		Challenges: make([]*pb.Challenge, 0),
 	}
 
-	for _, challenge := range challenges {
+	for _, challengeAndUser := range challengeAndUsers {
+		challenge := challengeAndUser.Challenge
 		resp.Challenges = append(resp.Challenges, &pb.Challenge{
 			Id:          challenge.ID,
 			Title:       challenge.Title,
@@ -402,13 +403,13 @@ func (s *ChallengeService) SubscribeToChallenge(ctx context.Context, req *pb.Sub
 		return nil, status.Error(400, "Invalid token")
 	}
 
-	if err := s.validateSubscribeToChallengeRequest(req, claims); err != nil {
+	if err := s.validateSubscribeToChallengeRequest(claims); err != nil {
 		return nil, err
 	}
 
 	challengeAndUser := &model.ChallengeAndUser{
 		ChallengeID: claims.ChallengeID,
-		UserID:      req.UserId,
+		UserID:      claims.UserID,
 		UserRole:    model.ChallengeAndUserParticipantRole,
 	}
 
@@ -419,13 +420,17 @@ func (s *ChallengeService) SubscribeToChallenge(ctx context.Context, req *pb.Sub
 
 		var challengeInvitation *model.ChallengeInvitation
 
-		if err := s.db.WithContext(context.Background()).First(&challengeInvitation, "challenge_id = ? AND user_id = ?", claims.ChallengeID, req.UserId).Error; err != nil {
+		if err := s.db.WithContext(context.Background()).Preload("Challenge").First(&challengeInvitation, "challenge_id = ? AND user_id = ?", claims.ChallengeID, claims.UserID).Error; err != nil {
 			return err
 		}
 
 		challengeInvitation.Status = model.ChallengeInvitationStatusAccepted
 
 		if err := s.db.WithContext(context.Background()).Save(&challengeInvitation).Error; err != nil {
+			return err
+		}
+
+		if err := s.TaskSvs.createTaskAndStatusesForChallenge(tx, &challengeInvitation.Challenge, claims.UserID); err != nil {
 			return err
 		}
 
@@ -436,21 +441,17 @@ func (s *ChallengeService) SubscribeToChallenge(ctx context.Context, req *pb.Sub
 		return nil, err
 	}
 
-	return s.GetChallengeById(ctx, &pb.GetChallengeRequest{Id: claims.ChallengeID, UserId: req.UserId})
+	return s.GetChallengeById(ctx, &pb.GetChallengeRequest{Id: claims.ChallengeID, UserId: claims.UserID})
 }
 
-func (s *ChallengeService) validateSubscribeToChallengeRequest(req *pb.SubscribeToChallengeRequest, claims *ChallengeInvitationClaims) error {
-	if claims.UserID != req.UserId {
-		return status.Error(400, "Invalid user")
-	}
-
-	if _, err := s.validateUserSubscribedToChallenge(claims.ChallengeID, req.UserId); err == nil {
+func (s *ChallengeService) validateSubscribeToChallengeRequest(claims *ChallengeInvitationClaims) error {
+	if _, err := s.validateUserSubscribedToChallenge(claims.ChallengeID, claims.UserID); err == nil {
 		return status.Error(400, "User already added to challenge")
 	}
 
 	var challengeInvitation *model.ChallengeInvitation
 
-	if err := s.db.Preload("Challenge").First(&challengeInvitation, "challenge_id = ? AND user_id = ?", claims.ChallengeID, req.UserId).Error; err != nil {
+	if err := s.db.Preload("Challenge").First(&challengeInvitation, "challenge_id = ? AND user_id = ?", claims.ChallengeID, claims.UserID).Error; err != nil {
 		return status.Error(404, "Invitation not found")
 	}
 

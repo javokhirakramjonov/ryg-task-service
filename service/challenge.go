@@ -259,10 +259,13 @@ func (s *ChallengeService) StartChallenge(ctx context.Context, req *pb.StartChal
 			return err
 		}
 
+		participantIds := make([]int64, 0)
 		for _, participant := range participants {
-			if err := s.TaskSvs.createTaskAndStatusesForChallenge(tx, challenge, participant.UserID); err != nil {
-				return err
-			}
+			participantIds = append(participantIds, participant.UserID)
+		}
+
+		if err := s.TaskSvs.createTaskAndStatusesForChallenge(tx, challenge, participantIds); err != nil {
+			return err
 		}
 
 		return nil
@@ -430,7 +433,7 @@ func (s *ChallengeService) SubscribeToChallenge(ctx context.Context, req *pb.Sub
 			return err
 		}
 
-		if err := s.TaskSvs.createTaskAndStatusesForChallenge(tx, &challengeInvitation.Challenge, claims.UserID); err != nil {
+		if err := s.TaskSvs.createTaskAndStatusesForChallenge(tx, &challengeInvitation.Challenge, []int64{claims.UserID}); err != nil {
 			return err
 		}
 

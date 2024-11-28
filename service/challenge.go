@@ -361,7 +361,7 @@ func (s *ChallengeService) sendInvitationEmail(challengeID, userID int64, email 
 	message := &email_service.GenericEmail{
 		To:      email,
 		Subject: "Challenge Invitation",
-		Body:    fmt.Sprintf("Click the link to accept the challenge: http://rygoal.com/challenges/accept?token=%s", token),
+		Body:    fmt.Sprintf("Click the link to accept the challenge: https://rygoal.com/challenges/accept?token=%s", token),
 	}
 
 	return s.GenericEmailPublisher.Publish(message)
